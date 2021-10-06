@@ -4,17 +4,17 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ public class Controller implements Initializable {// Интерфейс дает
     @FXML
     ListView<String> clientsList;
     @FXML
-    TextField msgField, loginField;
+    TextField msgField, loginField, pathField;
     @FXML
     PasswordField passwordField;
     @FXML
@@ -37,6 +37,8 @@ public class Controller implements Initializable {// Интерфейс дает
     MenuBar menuPanel;
     @FXML
     TableView<FileInfo> clientTable, serverTable;
+    @FXML
+    ComboBox<String> disksBox;
 
 
 
@@ -65,6 +67,8 @@ public class Controller implements Initializable {// Интерфейс дает
         serverTable.setManaged(!usernameIsNull);
         buttonPanel.setVisible(!usernameIsNull);
         buttonPanel.setManaged(!usernameIsNull);
+//        disksBox.setVisible(!usernameIsNull);
+//        disksBox.setManaged(!usernameIsNull);
 
 
         //clientsList.setVisible(!usernameIsNull);
@@ -118,6 +122,13 @@ public class Controller implements Initializable {// Интерфейс дает
         clientTable.getColumns().addAll(clientFileTypeColumn, clientFilenameColumn, clientFileSizeColumn, clientFileDateColumn);
         clientTable.getSortOrder().add(clientFileTypeColumn); // задали столбец, по которому будем по умолчанию сортироваться
 
+        //получаем список дисков:
+        disksBox.getItems().clear();
+        for (Path p : FileSystems.getDefault().getRootDirectories()){
+            disksBox.getItems().add(p.toString());
+        }
+        disksBox.getSelectionModel().select(0); // по умолчанию выбираем первый из них
+
         updateClientList(Paths.get("."));
 
         // НАСТРАИВАЕМ СЕРВЕРНУЮ ТАБЛИЦУ
@@ -160,6 +171,18 @@ public class Controller implements Initializable {// Интерфейс дает
         serverTable.getSortOrder().add(clientFileTypeColumn); // задали столбец, по которому будем по умолчанию сортироваться
 
         updateServerList(Paths.get(".")); // todo создать метод updateServerList()
+
+        clientTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) { // todo проверить метод. Ошибки в переходах
+                if(event.getClickCount() == 2){
+                    Path path = Paths.get(pathField.getText()).resolve(clientTable.getSelectionModel().getSelectedItem().getFilename());
+                    if(Files.isDirectory(path)){
+                        updateClientList(path);
+                    }
+                }
+            }
+        });
 
 
         network.setOnAuthFailedCallback(new Callback() {
@@ -218,6 +241,7 @@ public class Controller implements Initializable {// Интерфейс дает
     // Задача метода взять путь к какой-либо папке, и наполнить таблицу списком файлов и директорий, которые там есть
     public void updateClientList(Path path){
         try {
+            pathField.setText(path.normalize().toAbsolutePath().toString());
             clientTable.getItems().clear(); // getItems - запрос списка элементов в таблице
             // стрим берет любую папку, вычитывает оттуда список файлов, преобразует их к FileInfo, и закидывает в таблицу
             clientTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
@@ -315,5 +339,17 @@ public class Controller implements Initializable {// Интерфейс дает
     public void btnExitAction(ActionEvent actionEvent) {
         Platform.exit();
         network.disconnect();
+    }
+
+    public void btnPathUpAction(ActionEvent actionEvent) {
+        Path upperPath = Paths.get(pathField.getText()).getParent();
+        if (upperPath != null){
+            updateClientList(upperPath);
+        }
+    }
+
+    public void selectDiskAction(ActionEvent actionEvent) {
+        ComboBox<String> element = (ComboBox<String>) actionEvent.getSource();
+        updateClientList(Paths.get(element.getSelectionModel().getSelectedItem()));
     }
 }

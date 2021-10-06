@@ -14,11 +14,12 @@
             <MenuItem text="Documentation" />
         </Menu>
     </MenuBar>
+
     <HBox fx:id="aboveTables" >
         <HBox HBox.hgrow="ALWAYS">
-            <ComboBox/>
-            <TextField editable="false" HBox.hgrow="ALWAYS"/>
-            <Button text="Вверх"/>
+            <ComboBox fx:id="disksBox" onAction="#selectDiskAction"/>
+            <TextField fx:id="pathField" editable="false" HBox.hgrow="ALWAYS"/>
+            <Button text="Вверх" onAction="#btnPathUpAction"/>
         </HBox>
         <HBox HBox.hgrow="ALWAYS">
             <ComboBox/>
