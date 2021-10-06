@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox fx:id="rootElement" alignment="center" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.my.cloud.client.Controller">
+    <MenuBar fx:id="menuPanel">
+        <Menu text="File">
+            <MenuItem text="Copy" />
+            <MenuItem text="Exit" onAction="#btnExitAction" />
+        </Menu>
+        <Menu text="Info">
+            <MenuItem text="Documentation" />
+        </Menu>
+    </MenuBar>
+    <HBox fx:id="aboveTables" >
+        <HBox HBox.hgrow="ALWAYS">
+            <ComboBox/>
+            <TextField editable="false" HBox.hgrow="ALWAYS"/>
+            <Button text="Вверх"/>
+        </HBox>
+        <HBox HBox.hgrow="ALWAYS">
+            <ComboBox/>
+            <TextField editable="false" HBox.hgrow="ALWAYS"/>
+            <Button text="Вверх"/>
+        </HBox>
+    </HBox>
+    <HBox fx:id="tables" VBox.vgrow="ALWAYS">
+        <TableView fx:id="clientTable" HBox.hgrow="ALWAYS" />
+        <TableView fx:id="serverTable" HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+
+
+    <HBox fx:id="buttonPanel" spacing="5">
+        <Button maxWidth="Infinity" text="Download" HBox.hgrow="ALWAYS" />
+        <Button maxWidth="Infinity" text="Upload" HBox.hgrow="ALWAYS" />
+        <Button maxWidth="Infinity" text="Delete" HBox.hgrow="ALWAYS" />
+        <Button maxWidth="Infinity" text="Log Out" HBox.hgrow="ALWAYS" />
+      <padding>
+         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+      </padding>
+    </HBox>
+    <VBox fx:id="loginPanel" alignment="CENTER" maxWidth="150" minWidth="150" spacing="10">
+        <TextField fx:id="loginField" onAction="#login" promptText="Введите имя пользователя" VBox.vgrow="ALWAYS" />
+        <PasswordField fx:id="passwordField" onAction="#login" promptText="Введите пароль" VBox.vgrow="ALWAYS" />
+        <Button onAction="#login" text="Войти" />
+    </VBox>
+
+</VBox>

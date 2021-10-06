@@ -10,6 +10,10 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 public class NettyServerApp {
     public void run() throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -21,7 +25,7 @@ public class NettyServerApp {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(new AuthHandler());
+                            ch.pipeline().addLast(new OutMessageHandler(), new AuthHandler());
                         }
                     })
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
@@ -31,6 +35,12 @@ public class NettyServerApp {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }
+    }
+
+    public String serverFiles() throws IOException {
+        StringBuilder listFiles = new StringBuilder();
+        Files.list(Paths.get("server_repository")).map(path -> path.getFileName().toString()).forEach(o -> listFiles.append(o + " "));
+        return listFiles.toString();
     }
 
     public static void main(String[] args) {

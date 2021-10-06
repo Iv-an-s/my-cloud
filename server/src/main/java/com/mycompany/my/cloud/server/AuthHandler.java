@@ -73,7 +73,7 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
             }
             passwordLength = buf.readInt();
             state = 3;
-            System.out.println("Прочитали passwordLength");
+            System.out.println("Прочитали passwordLength: " + passwordLength);
         }
 
         if (state == 3) {
@@ -94,11 +94,14 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
             Optional<String> optional = authenticationProvider.getNicknameByLoginAndPassword(login, password);
             if(!optional.isPresent()) {
                 System.out.println("Incorrect login or password. Try again");
+                ctx.writeAndFlush("/login_failed Incorrect login or password!");
+                state = -1;
                 return;
             }
             username = optional.get();
             System.out.println(username + " подключился");
             authOk = true;
+            ctx.writeAndFlush("/login_ok " + username);
             ctx.pipeline().addLast(new MainHandler(username));
             ctx.fireChannelRead(msg);
             buf.release();
