@@ -26,23 +26,15 @@ public class Controller implements Initializable {// Интерфейс дает
     @FXML
     ListView<String> clientsList;
     @FXML
-    TextField msgField, loginField, pathField;
+    TextField msgField, loginField;
     @FXML
     PasswordField passwordField;
     @FXML
     VBox rootElement, loginPanel;
     @FXML
-    HBox tables, aboveTables, buttonPanel;
+    HBox tablesPanel, buttonPanel;
     @FXML
     MenuBar menuPanel;
-    @FXML
-    TableView<FileInfo> clientTable, serverTable;
-    @FXML
-    ComboBox<String> disksBox;
-
-
-
-
 
 
     private Network network;
@@ -53,137 +45,18 @@ public class Controller implements Initializable {// Интерфейс дает
         boolean usernameIsNull = username == null;
         loginPanel.setVisible(usernameIsNull);
         loginPanel.setManaged(usernameIsNull);
-//        workPanel.setVisible(!usernameIsNull);
-//        workPanel.setManaged(!usernameIsNull);
         menuPanel.setVisible(!usernameIsNull);
         menuPanel.setManaged(!usernameIsNull);
-        tables.setVisible(!usernameIsNull);
-        tables.setManaged(!usernameIsNull);
-        aboveTables.setVisible(!usernameIsNull);
-        aboveTables.setManaged(!usernameIsNull);
-        clientTable.setVisible(!usernameIsNull);
-        clientTable.setManaged(!usernameIsNull);
-        serverTable.setVisible(!usernameIsNull);
-        serverTable.setManaged(!usernameIsNull);
+        tablesPanel.setVisible(!usernameIsNull);
+        tablesPanel.setManaged(!usernameIsNull);
         buttonPanel.setVisible(!usernameIsNull);
         buttonPanel.setManaged(!usernameIsNull);
-//        disksBox.setVisible(!usernameIsNull);
-//        disksBox.setManaged(!usernameIsNull);
-
-
-        //clientsList.setVisible(!usernameIsNull);
-        //clientsList.setManaged(!usernameIsNull);
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setUsername(null);
         network = new Network();
-
-        // НАСТРАИВАЕМ КЛИЕТСКУЮ ТАБЛИЦУ
-        // Когда создаем столбец, то указываем, что должно храниться с таблице, и как это в ней должно выглядеть
-        // Информация о файле у нас храниться в FileInfo и мы это хотим преобразовать в строку:
-        TableColumn<FileInfo, String> clientFileTypeColumn = new TableColumn<>();
-        clientFileTypeColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getType().getName()));
-        clientFileTypeColumn.setPrefWidth(24); // todo прорезинить столбцы
-
-        TableColumn<FileInfo, String> clientFilenameColumn = new TableColumn<>("Имя");
-        clientFilenameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getFilename()));
-        clientFilenameColumn.setPrefWidth(240);
-
-        TableColumn<FileInfo, Long> clientFileSizeColumn = new TableColumn<>("Размер");
-        clientFileSizeColumn.setCellValueFactory(param -> new SimpleObjectProperty(param.getValue().getSize()));
-        clientFileSizeColumn.setCellFactory(column -> {
-            return new TableCell<FileInfo, Long>(){
-                @Override
-                protected void updateItem(Long item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if(item == null || empty){
-                        setText(null);
-                        setStyle("");
-                    }else {
-                        String text = String.format("%,d bytes", item); // разделение порядков (по 3 цифры) через пробел
-                        if(item == -1L){
-                            text = "[DIR]";
-                        }
-                        setText(text);
-                    }
-                }
-            };
-        });
-        clientFileSizeColumn.setPrefWidth(120);
-
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        TableColumn<FileInfo, String> clientFileDateColumn = new TableColumn<>("Дата изменения");
-        clientFileDateColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastModified().format(dtf)));
-        clientFileDateColumn.setPrefWidth(120);
-
-        //table.getColumns().add(clientFileTypeColumn);
-        clientTable.getColumns().addAll(clientFileTypeColumn, clientFilenameColumn, clientFileSizeColumn, clientFileDateColumn);
-        clientTable.getSortOrder().add(clientFileTypeColumn); // задали столбец, по которому будем по умолчанию сортироваться
-
-        //получаем список дисков:
-        disksBox.getItems().clear();
-        for (Path p : FileSystems.getDefault().getRootDirectories()){
-            disksBox.getItems().add(p.toString());
-        }
-        disksBox.getSelectionModel().select(0); // по умолчанию выбираем первый из них
-
-        updateClientList(Paths.get("."));
-
-        // НАСТРАИВАЕМ СЕРВЕРНУЮ ТАБЛИЦУ
-        TableColumn<FileInfo, String> serverFileTypeColumn = new TableColumn<>();
-        serverFileTypeColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getType().getName()));
-        serverFileTypeColumn.setPrefWidth(24);
-
-        TableColumn<FileInfo, String> serverFilenameColumn = new TableColumn<>("Имя");
-        serverFilenameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getFilename()));
-        serverFilenameColumn.setPrefWidth(240);
-
-        TableColumn<FileInfo, Long> serverFileSizeColumn = new TableColumn<>("Размер");
-        serverFileSizeColumn.setCellValueFactory(param -> new SimpleObjectProperty(param.getValue().getSize()));
-        serverFileSizeColumn.setCellFactory(column -> {
-            return new TableCell<FileInfo, Long>(){
-                @Override
-                protected void updateItem(Long item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if(item == null || empty){
-                        setText(null);
-                        setStyle("");
-                    }else {
-                        String text = String.format("%,d bytes", item); // разделение порядков (по 3 цифры) через пробел
-                        if(item == -1L){
-                            text = "[DIR]";
-                        }
-                        setText(text);
-                    }
-                }
-            };
-        });
-        serverFileSizeColumn.setPrefWidth(120);
-
-        TableColumn<FileInfo, String> serverFileDateColumn = new TableColumn<>("Дата изменения");
-        serverFileDateColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastModified().format(dtf)));
-        serverFileDateColumn.setPrefWidth(120);
-
-        //table.getColumns().add(clientFileTypeColumn);
-        serverTable.getColumns().addAll(serverFileTypeColumn, serverFilenameColumn, serverFileSizeColumn, serverFileDateColumn);
-        serverTable.getSortOrder().add(clientFileTypeColumn); // задали столбец, по которому будем по умолчанию сортироваться
-
-        updateServerList(Paths.get(".")); // todo создать метод updateServerList()
-
-        clientTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) { // todo проверить метод. Ошибки в переходах
-                if(event.getClickCount() == 2){
-                    Path path = Paths.get(pathField.getText()).resolve(clientTable.getSelectionModel().getSelectedItem().getFilename());
-                    if(Files.isDirectory(path)){
-                        updateClientList(path);
-                    }
-                }
-            }
-        });
-
 
         network.setOnAuthFailedCallback(new Callback() {
             @Override
@@ -237,40 +110,9 @@ public class Controller implements Initializable {// Интерфейс дает
         });
     }
 
-    // Метод, который умеет по к-л пути собрать список файлов.
-    // Задача метода взять путь к какой-либо папке, и наполнить таблицу списком файлов и директорий, которые там есть
-    public void updateClientList(Path path){
-        try {
-            pathField.setText(path.normalize().toAbsolutePath().toString());
-            clientTable.getItems().clear(); // getItems - запрос списка элементов в таблице
-            // стрим берет любую папку, вычитывает оттуда список файлов, преобразует их к FileInfo, и закидывает в таблицу
-            clientTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
-            clientTable.sort();
-        } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Не удалось обновить список файлов", ButtonType.OK);
-            alert.showAndWait();
-        }
-    }
 
-    public void updateServerList(Path path){
-        try {
-            serverTable.getItems().clear(); // getItems - запрос списка элементов в таблице
-            // стрим берет любую папку, вычитывает оттуда список файлов, преобразует их к FileInfo, и закидывает в таблицу
-            serverTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
-            serverTable.sort();
-        } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Не удалось обновить список файлов", ButtonType.OK);
-            alert.showAndWait();
-        }
-    }
 
-    public void pressOnUploadBtn(){
 
-    }
-
-    public void pressOnDownloadBtn(){
-
-    }
 
     public void refreshLocalFileList(){
 
@@ -341,15 +183,9 @@ public class Controller implements Initializable {// Интерфейс дает
         network.disconnect();
     }
 
-    public void btnPathUpAction(ActionEvent actionEvent) {
-        Path upperPath = Paths.get(pathField.getText()).getParent();
-        if (upperPath != null){
-            updateClientList(upperPath);
-        }
+    public void btnDownloadAction(ActionEvent actionEvent) {
     }
 
-    public void selectDiskAction(ActionEvent actionEvent) {
-        ComboBox<String> element = (ComboBox<String>) actionEvent.getSource();
-        updateClientList(Paths.get(element.getSelectionModel().getSelectedItem()));
+    public void btnUploadAction(ActionEvent actionEvent) {
     }
 }
