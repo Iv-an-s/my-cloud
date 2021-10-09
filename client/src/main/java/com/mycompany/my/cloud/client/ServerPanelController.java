@@ -82,4 +82,15 @@ public class ServerPanelController implements Initializable {
         }
     }
 
+    public String getSelectedFilename() { // todo написать метод для серверной таблицы
+        if (!serverTable.isFocused()) {
+            return null;
+        }
+        return serverTable.getSelectionModel().getSelectedItem().getFilename();
+    }
+
+//    public String getCurrentPath() {
+//        return pathField.getText();
+//    }
+
 }

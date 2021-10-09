@@ -16,8 +16,8 @@
     </MenuBar>
 
     <HBox fx:id="tablesPanel" VBox.vgrow="ALWAYS">
-        <fx:include source="clientPanel.fxml" HBox.hgrow="ALWAYS"/>
-        <fx:include source="serverPanel.fxml" HBox.hgrow="ALWAYS"/>
+        <fx:include fx:id="clientPanel" source="clientPanel.fxml" HBox.hgrow="ALWAYS"/>
+        <fx:include fx:id="serverPanel" source="serverPanel.fxml" HBox.hgrow="ALWAYS"/>
     </HBox>
 
     <HBox fx:id="buttonPanel" spacing="5">

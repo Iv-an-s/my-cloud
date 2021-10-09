@@ -14,4 +14,9 @@
         <Button text="Вверх" onAction="#btnPathUpAction"/>
     </HBox>
     <TableView fx:id="clientTable" VBox.vgrow="ALWAYS"/>
+
+    <properties>
+        <ctrl><fx:reference source="controller"/></ctrl>
+    </properties>
+
 </VBox>

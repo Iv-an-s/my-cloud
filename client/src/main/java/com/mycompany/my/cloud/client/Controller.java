@@ -30,7 +30,7 @@ public class Controller implements Initializable {// Интерфейс дает
     @FXML
     PasswordField passwordField;
     @FXML
-    VBox rootElement, loginPanel;
+    VBox rootElement, loginPanel, clientPanel, serverPanel;
     @FXML
     HBox tablesPanel, buttonPanel;
     @FXML
@@ -184,8 +184,26 @@ public class Controller implements Initializable {// Интерфейс дает
     }
 
     public void btnDownloadAction(ActionEvent actionEvent) {
+        ClientPanelController clientPanelController = (ClientPanelController) clientPanel.getProperties().get("ctrl");
+        ServerPanelController serverPanelController = (ServerPanelController) serverPanel.getProperties().get("ctrl");
+
+        if(serverPanelController.getSelectedFilename() == null){
+            Alert alert = new Alert(Alert.AlertType.WARNING,"Не выбран файл для скачивания", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+        // todo логика метода
     }
 
     public void btnUploadAction(ActionEvent actionEvent) {
+        ClientPanelController clientPanelController = (ClientPanelController) clientPanel.getProperties().get("ctrl");
+        ServerPanelController serverPanelController = (ServerPanelController) serverPanel.getProperties().get("ctrl");
+
+        if(clientPanelController.getSelectedFilename() == null){
+            Alert alert = new Alert(Alert.AlertType.WARNING,"Не выбран файл для загрузки в удаленный репозиторий", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+        // todo логика метода
     }
 }

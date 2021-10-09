@@ -43,16 +43,16 @@ public class ClientPanelController implements Initializable {
         TableColumn<FileInfo, Long> clientFileSizeColumn = new TableColumn<>("Размер");
         clientFileSizeColumn.setCellValueFactory(param -> new SimpleObjectProperty(param.getValue().getSize()));
         clientFileSizeColumn.setCellFactory(column -> {
-            return new TableCell<FileInfo, Long>(){
+            return new TableCell<FileInfo, Long>() {
                 @Override
                 protected void updateItem(Long item, boolean empty) {
                     super.updateItem(item, empty);
-                    if(item == null || empty){
+                    if (item == null || empty) {
                         setText(null);
                         setStyle("");
-                    }else {
+                    } else {
                         String text = String.format("%,d bytes", item); // разделение порядков (по 3 цифры) через пробел
-                        if(item == -1L){
+                        if (item == -1L) {
                             text = "[DIR]";
                         }
                         setText(text);
@@ -73,24 +73,24 @@ public class ClientPanelController implements Initializable {
 
         //получаем список дисков:
         disksBox.getItems().clear();
-        for (Path p : FileSystems.getDefault().getRootDirectories()){
+        for (Path p : FileSystems.getDefault().getRootDirectories()) {
             disksBox.getItems().add(p.toString());
         }
         disksBox.getSelectionModel().select(0); // по умолчанию выбираем первый из них
 
         updateClientList(Paths.get("."));
 
-    clientTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
-        @Override
-        public void handle(MouseEvent event) { // todo проверить метод. Ошибки в переходах
-            if(event.getClickCount() == 2){
-                Path path = Paths.get(pathField.getText()).resolve(clientTable.getSelectionModel().getSelectedItem().getFilename());
-                if(Files.isDirectory(path)){
-                    updateClientList(path);
+        clientTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) { // todo проверить метод. Ошибки в переходах
+                if (event.getClickCount() == 2) {
+                    Path path = Paths.get(pathField.getText()).resolve(clientTable.getSelectionModel().getSelectedItem().getFilename());
+                    if (Files.isDirectory(path)) {
+                        updateClientList(path);
+                    }
                 }
             }
-        }
-    });
+        });
     }
 
     public void selectDiskAction(ActionEvent actionEvent) {
@@ -100,7 +100,7 @@ public class ClientPanelController implements Initializable {
 
     // Метод, который умеет по к-л пути собрать список файлов.
     // Задача метода взять путь к какой-либо папке, и наполнить таблицу списком файлов и директорий, которые там есть
-    public void updateClientList(Path path){
+    public void updateClientList(Path path) {
         try {
             pathField.setText(path.normalize().toAbsolutePath().toString());
             clientTable.getItems().clear(); // getItems - запрос списка элементов в таблице
@@ -113,21 +113,21 @@ public class ClientPanelController implements Initializable {
         }
     }
 
-    public String getSelectedFilename(){ // todo написать метод для серверной таблицы
-        if(!clientTable.isFocused()){
+    public void btnPathUpAction(ActionEvent actionEvent) {
+        Path upperPath = Paths.get(pathField.getText()).getParent();
+        if (upperPath != null) {
+            updateClientList(upperPath);
+        }
+    }
+
+    public String getSelectedFilename() { // todo написать метод для серверной таблицы
+        if (!clientTable.isFocused()) {
             return null;
         }
         return clientTable.getSelectionModel().getSelectedItem().getFilename();
     }
 
-    public String getCurrentPath(){
+    public String getCurrentPath() {
         return pathField.getText();
-    }
-
-    public void btnPathUpAction(ActionEvent actionEvent) {
-        Path upperPath = Paths.get(pathField.getText()).getParent();
-        if (upperPath != null){
-            updateClientList(upperPath);
-        }
     }
 }

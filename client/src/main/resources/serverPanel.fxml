@@ -12,4 +12,8 @@
         <TextField fx:id="textField" text="content of server repository" editable="false" HBox.hgrow="ALWAYS"/>
     </HBox>
     <TableView fx:id="serverTable" VBox.vgrow="ALWAYS"/>
+
+    <properties>
+        <ctrl><fx:reference source="controller"/></ctrl>
+    </properties>
 </VBox>
