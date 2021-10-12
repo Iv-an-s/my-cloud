@@ -1,5 +1,6 @@
 package com.mycompany.my.cloud.client;
 
+import com.mycompany.my.cloud.common.FileInfo;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;

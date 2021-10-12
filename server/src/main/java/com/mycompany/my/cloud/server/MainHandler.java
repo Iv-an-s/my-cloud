@@ -15,6 +15,8 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     // (длина имени файла (4 байта(int n))) -> (имя файла (byte[n])) -> (размер файла (8 байт (long m)) -> (файл (m байт)))
     private enum DataType {
         EMPTY((byte) -1), FILE((byte) 15), COMMAND((byte) 16);
+    // Протокол для команды (после того как прочитали сигнальный байт):
+    // 1 байт - сигнальный байт команды
 
         byte firstMessageByte;
 
@@ -47,9 +49,19 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        if (!isCommandHandlerCreated) {
+            ctx.pipeline().addLast(new CommandHandler(username));
+            isCommandHandlerCreated = true;
+            System.out.println("CommandHandler добавлен в pipeline");
+        }
+    }
+
+    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = ((ByteBuf) msg);
         System.out.println("Работает MainHandler. Подготовлен буфер");
+
         // defining the message type
         if (state == -1) {
             byte firstByte = buf.readByte();
@@ -59,11 +71,8 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
             System.out.println("Message type is: " + type);
         }
         if (type.equals(DataType.COMMAND)) {
-            if (!isCommandHandlerCreated) {
-                ctx.pipeline().addLast(new CommandHandler(username));
-                isCommandHandlerCreated = true;
-            }
             ctx.fireChannelRead(buf);
+            System.out.println("Команда передана в CommandHandler");
             state = -1;
             return;
         }
@@ -115,7 +124,7 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
         // получаем файл
         if (state == 3) {
             long count = 0;
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(Paths.get("server_repository", filename).toFile()))) {
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(Paths.get("server_repository", username, filename).toFile()))) {
                 while (buf.readableBytes() != -1) {
                     out.write(buf.readByte());
                     count++;

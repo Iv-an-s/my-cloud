@@ -1,25 +1,33 @@
 package com.mycompany.my.cloud.client;
 
+import com.mycompany.my.cloud.common.FileInfo;
+import com.mycompany.my.cloud.common.FileInfoPackage;
 import sun.security.util.ArrayUtil;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.lang.reflect.Array;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Network {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
+//    private ObjectInputStream objectInputStream;
+    private FileInfoPackage fileInfoPackage;
 
     private Callback onAuthOkCallback;
     private Callback onAuthFailedCallback;
     private Callback onMessageReceivedCallback;
     private Callback onConnectCallback;
     private Callback onDisconnectCallback;
+    private Callback onGetFileListCallback;
 
 
     public void setOnAuthOkCallback(Callback onAuthOkCallback) {
@@ -42,8 +50,18 @@ public class Network {
         this.onDisconnectCallback = onDisconnectCallback;
     }
 
+    public void setOnGetFileListCallback(Callback onGetFileListCallback){
+        this.onGetFileListCallback = onGetFileListCallback;
+    }
+
+
+
     public boolean isConnected(){
         return socket != null && !socket.isClosed();
+    }
+
+    public ObjectInputStream getObjectInputStream() {
+        return null;
     }
 
     public void connect(int port) throws IOException {
@@ -76,13 +94,31 @@ public class Network {
                     // Цикл общения
                     while (true){
                         System.out.println("Перешли в цикл общения...");
-                        String msg = in.readUTF();
-                        if (onMessageReceivedCallback != null){
-                            onMessageReceivedCallback.callback(msg);
+                        String msg = readMessage();
+                        System.out.println("Прочитали сообщение: " + msg);
+                        switch (msg){
+                            case "/list":
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try(ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream())){
+                                            fileInfoPackage = (FileInfoPackage) objectInputStream.readObject();
+                                            System.out.println("Прочитали fileInfoPackage");
+                                        }catch (IOException| ClassNotFoundException e){
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }).start();
+//                                if(onGetFileListCallback != null){
+//                                    onGetFileListCallback.callback();
+//                                }
                         }
+//                        if (onMessageReceivedCallback != null){
+//                            onMessageReceivedCallback.callback(msg);
+//                        }
                     }
-                }catch (IOException e){
-                    e.printStackTrace();
+//                }catch (IOException e){
+//                    e.printStackTrace();
                 }finally {
                     disconnect();
                 }

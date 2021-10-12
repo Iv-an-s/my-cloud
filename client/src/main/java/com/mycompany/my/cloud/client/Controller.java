@@ -1,5 +1,7 @@
 package com.mycompany.my.cloud.client;
 
+import com.mycompany.my.cloud.common.FileInfo;
+import com.mycompany.my.cloud.common.FileInfoPackage;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,6 +18,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -39,6 +42,7 @@ public class Controller implements Initializable {// Интерфейс дает
 
     private Network network;
     private String username;
+    private List<FileInfo> fileInfoList;
 
     public void setUsername(String username) {
         this.username = username;
@@ -97,7 +101,22 @@ public class Controller implements Initializable {// Интерфейс дает
                     }
                     return;
                 }
-                msgArea.appendText(msg + "\n");
+                //msgArea.appendText(msg + "\n");
+            }
+        });
+
+        network.setOnGetFileListCallback(new Callback() {
+            @Override
+            public void callback(Object... args) {
+                try {
+                    FileInfoPackage fileInfoPackage = (FileInfoPackage) network.getObjectInputStream().readObject();
+                    fileInfoList = fileInfoPackage.getFileInfoList();
+                    for (int i = 0; i < fileInfoList.size(); i++) {
+                        System.out.println("file #" + i + ": " + fileInfoList.get(i).getFilename());
+                    }
+                } catch (IOException| ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
         });
 

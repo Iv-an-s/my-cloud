@@ -1,9 +1,13 @@
-package com.mycompany.my.cloud.client;
+package com.mycompany.my.cloud.common;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.sql.Time;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -74,5 +78,16 @@ public class FileInfo {
         } catch (IOException e) {
             throw new RuntimeException("Unable to create file info from path");
         }
+    }
+
+    public FileInfo(String filename, FileType type, long size, LocalDateTime lastModified) {
+        this.filename = filename;
+        this.type = type;
+        this.size = size;
+        this.lastModified = lastModified;
+    }
+
+    public FileInfo() {
+        new FileInfo("no files", FileType.FILE, 0L, LocalDateTime.now());
     }
 }
