@@ -1,33 +1,25 @@
 package com.mycompany.my.cloud.client;
 
-import com.mycompany.my.cloud.common.FileInfo;
-import com.mycompany.my.cloud.common.FileInfoPackage;
-import sun.security.util.ArrayUtil;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.lang.reflect.Array;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
 
 public class Network {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
-//    private ObjectInputStream objectInputStream;
-    private FileInfoPackage fileInfoPackage;
+    private String fileList;
 
     private Callback onAuthOkCallback;
     private Callback onAuthFailedCallback;
-    private Callback onMessageReceivedCallback;
+    private Callback onHandleCommandCallback;
     private Callback onConnectCallback;
     private Callback onDisconnectCallback;
-    private Callback onGetFileListCallback;
+    private Callback onUpdateServerFileList;
 
 
     public void setOnAuthOkCallback(Callback onAuthOkCallback) {
@@ -38,8 +30,8 @@ public class Network {
         this.onAuthFailedCallback = onAuthFailedCallback;
     }
 
-    public void setOnMessageReceivedCallback(Callback onMessageReceivedCallback) {
-        this.onMessageReceivedCallback = onMessageReceivedCallback;
+    public void setOnHandleCommandCallback(Callback onHandleCommandCallback) {
+        this.onHandleCommandCallback = onHandleCommandCallback;
     }
 
     public void setOnConnectCallback(Callback onConnectCallback) {
@@ -50,18 +42,13 @@ public class Network {
         this.onDisconnectCallback = onDisconnectCallback;
     }
 
-    public void setOnGetFileListCallback(Callback onGetFileListCallback){
-        this.onGetFileListCallback = onGetFileListCallback;
+    public void setOnUpdateServerFileList(Callback onUpdateServerFileList){
+        this.onUpdateServerFileList = onUpdateServerFileList;
     }
-
 
 
     public boolean isConnected(){
         return socket != null && !socket.isClosed();
-    }
-
-    public ObjectInputStream getObjectInputStream() {
-        return null;
     }
 
     public void connect(int port) throws IOException {
@@ -92,23 +79,26 @@ public class Network {
                         }
                     }
                     // Цикл общения
+                    askFileList();
+                    if(onUpdateServerFileList!= null){
+                        onUpdateServerFileList.callback(fileList);
+                    }
                     while (true){
                         System.out.println("Перешли в цикл общения...");
                         String msg = readMessage();
-                        System.out.println("Прочитали сообщение: " + msg);
-                        switch (msg){
-                            case "/list":
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try(ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream())){
-                                            fileInfoPackage = (FileInfoPackage) objectInputStream.readObject();
-                                            System.out.println("Прочитали fileInfoPackage");
-                                        }catch (IOException| ClassNotFoundException e){
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                }).start();
+                        /**
+                         * Запрашиваем список файлов
+                         * получаем список от сервера, присваиваем переменной содержимое списка (String msg)
+                         * onUpdateFileListCallback.callback(msg)
+                         * если лист обновился - запускаем обработчика команд, который ждем команды (от контроллера)
+                         * onHandlerCommandCallback.callback()
+                         * который через switch обрабатывает команды от кнопок, отправляя запросы и получая результат
+                         *
+                          */
+                        if (onHandleCommandCallback != null){
+                            onHandleCommandCallback.callback();
+                        }
+
 //                                if(onGetFileListCallback != null){
 //                                    onGetFileListCallback.callback();
 //                                }
@@ -116,7 +106,7 @@ public class Network {
 //                        if (onMessageReceivedCallback != null){
 //                            onMessageReceivedCallback.callback(msg);
 //                        }
-                    }
+
 //                }catch (IOException e){
 //                    e.printStackTrace();
                 }finally {
@@ -141,6 +131,23 @@ public class Network {
             e.printStackTrace();
         }
         return "incorrect message";
+    }
+
+    public void askFileList(){
+//        протокол для запроса списка файлов - отправка сигнальных байтов 16 и 15
+//      в ответ получаем Длину строки (1 int) + строку (String)
+        try {
+            out.write(16);
+            out.write(15);
+            int fileListSize = in.readInt();
+            System.out.println("Network: fileListSize is " + fileListSize + " bytes");
+            byte [] fileListBytes = new byte[fileListSize];
+            in.read(fileListBytes);
+            fileList = new String(fileListBytes);
+            System.out.println(fileList);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void tryToLogin(String login, String password) throws IOException {

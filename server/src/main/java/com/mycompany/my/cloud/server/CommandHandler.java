@@ -8,11 +8,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class CommandHandler extends ChannelInboundHandlerAdapter {
     /**
-     * Протокол для обработки команды:
-     * (сигнальный байт типа команды (1 байт)) ->
+     * Протокол для обработки команды LIST:
+     * КЛИЕНТ --> СЕРВЕР: сигнальный байт типа команды 15(1 байт)
+     * СЕРВЕР --> КЛИЕНТ: длина строки с именами файлов (1 int) --> строка (n байт). Завернуто в ByteBuf
      */
     private enum CommandType {
         LIST((byte) 15), SENDFILE((byte) 16), DELETEFILE((byte) 17), EMPTY((byte) -1);
@@ -56,15 +59,13 @@ public class CommandHandler extends ChannelInboundHandlerAdapter {
                 break;
             case SENDFILE:
                 System.out.println("Получен запрос на отправку файла");
-                try {
-                    executeSendFile(ctx, buf);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                executeSendFile(ctx, buf);
+                sendFileList(ctx, buf);
                 break;
             case DELETEFILE:
                 System.out.println("Получен запрос на удаление файла");
                 executeDeleteFile(buf);
+                sendFileList(ctx, buf);
                 break;
             case EMPTY:
                 System.out.println("Получен некорректный запрос");
@@ -78,11 +79,22 @@ public class CommandHandler extends ChannelInboundHandlerAdapter {
         Path path = Paths.get("server_repository", username);
         StringBuilder sb = new StringBuilder();
         try {
-            Files.list(path).map(p -> p + " ").forEach(sb::append);
+            Files.list(path).map(p -> {
+                try {
+                    return p.getFileName().toString() + " "
+                            + Files.isDirectory(p) + " "
+                            + Files.size(p) + " "
+                            + LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneOffset.ofHours(3)).toString() + " ";
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }).forEach(sb::append);
         } catch (IOException e) {
             e.printStackTrace();
         }
         String fileList = sb.toString().trim();
+        System.out.println("CommandHandler: собрал вот такой fileList - [" + fileList + "]");
         ctx.writeAndFlush(fileList);
         System.out.println("fileList отправлен");
         // OutMessageHandler преобразует String в ByteBuf-сообщение из int(длина строки) + сама строка
@@ -114,7 +126,7 @@ public class CommandHandler extends ChannelInboundHandlerAdapter {
         System.out.println("file " + filename + "has been deleted");
     }
 
-    private void executeSendFile(ChannelHandlerContext ctx, ByteBuf buf) throws IOException {
+    private void executeSendFile(ChannelHandlerContext ctx, ByteBuf buf) {
         int reqLen = 4;
         String filename;
         System.out.println("Отправляю файл клиету: " + username);
@@ -137,7 +149,12 @@ public class CommandHandler extends ChannelInboundHandlerAdapter {
         Path pathReq = Paths.get("server_repository", username, filename);
         // отправить длину файла (нужен OutboundHandler)
         ctx.pipeline().addLast(new AnswerHandler());
-        Long fileSize = Files.size(pathReq);
+        Long fileSize = null;
+        try {
+            fileSize = Files.size(pathReq);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         System.out.println("fileSize is : " + fileSize);
         ctx.channel().writeAndFlush(fileSize);
         ctx.pipeline().remove(AnswerHandler.class);

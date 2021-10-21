@@ -17,7 +17,13 @@
 
     <HBox fx:id="tablesPanel" VBox.vgrow="ALWAYS">
         <fx:include fx:id="clientPanel" source="clientPanel.fxml" HBox.hgrow="ALWAYS"/>
-        <fx:include fx:id="serverPanel" source="serverPanel.fxml" HBox.hgrow="ALWAYS"/>
+        <VBox>
+            <HBox>
+                <TextField fx:id="textField" text="content of server repository" editable="false" HBox.hgrow="ALWAYS"/>
+            </HBox>
+            <TableView fx:id="serverTable" VBox.vgrow="ALWAYS"/>
+        </VBox>
+<!--        <fx:include fx:id="serverPanel" source="serverPanel.fxml" HBox.hgrow="ALWAYS"/>  -->
     </HBox>
 
     <HBox fx:id="buttonPanel" spacing="5">

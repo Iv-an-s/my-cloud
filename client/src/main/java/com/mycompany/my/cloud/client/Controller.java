@@ -1,44 +1,39 @@
 package com.mycompany.my.cloud.client;
 
 import com.mycompany.my.cloud.common.FileInfo;
-import com.mycompany.my.cloud.common.FileInfoPackage;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.*;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 public class Controller implements Initializable {// Интерфейс дает возможность проводить подготовительные действия,
     // проводить преднастройку контроллера
+
     @FXML
-    TextArea msgArea;
-    @FXML
-    ListView<String> clientsList;
-    @FXML
-    TextField msgField, loginField;
+    TextField loginField, textField;
     @FXML
     PasswordField passwordField;
     @FXML
-    VBox rootElement, loginPanel, clientPanel, serverPanel;
+    VBox rootElement, loginPanel, clientPanel;
     @FXML
     HBox tablesPanel, buttonPanel;
     @FXML
     MenuBar menuPanel;
-
+    @FXML
+    TableView<FileInfo> serverTable;
 
     private Network network;
     private String username;
@@ -59,14 +54,56 @@ public class Controller implements Initializable {// Интерфейс дает
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        /** Инициализируем переменные */
         setUsername(null);
         network = new Network();
+        fileInfoList = new ArrayList<>();
+
+        /** НАСТРАИВАЕМ СЕРВЕРНУЮ ТАБЛИЦУ */
+        TableColumn<FileInfo, String> serverFileTypeColumn = new TableColumn<>();
+        serverFileTypeColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getType().getName()));
+        serverFileTypeColumn.setPrefWidth(24);
+
+        TableColumn<FileInfo, String> serverFilenameColumn = new TableColumn<>("Имя");
+        serverFilenameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getFilename()));
+        serverFilenameColumn.setPrefWidth(240);
+
+        TableColumn<FileInfo, Long> serverFileSizeColumn = new TableColumn<>("Размер");
+        serverFileSizeColumn.setCellValueFactory(param -> new SimpleObjectProperty(param.getValue().getSize()));
+        serverFileSizeColumn.setCellFactory(column -> {
+            return new TableCell<FileInfo, Long>() {
+                @Override
+                protected void updateItem(Long item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (item == null || empty) {
+                        setText(null);
+                        setStyle("");
+                    } else {
+                        String text = String.format("%,d bytes", item); // разделение порядков (по 3 цифры) через пробел
+                        if (item == -1L) {
+                            text = "[DIR]";
+                        }
+                        setText(text);
+                    }
+                }
+            };
+        });
+        serverFileSizeColumn.setPrefWidth(120);
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        TableColumn<FileInfo, String> serverFileDateColumn = new TableColumn<>("Дата изменения");
+        serverFileDateColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastModified().format(dtf)));
+        serverFileDateColumn.setPrefWidth(120);
+
+        serverTable.getColumns().addAll(serverFileTypeColumn, serverFilenameColumn, serverFileSizeColumn, serverFileDateColumn);
+        serverTable.getSortOrder().add(serverFileTypeColumn); // задали столбец, по которому будем по умолчанию сортироваться
+
+        /** ИНИЦИАЛИЗИРУЕМ КОЛБЕКИ */
 
         network.setOnAuthFailedCallback(new Callback() {
             @Override
             public void callback(Object... args) {
                 String cause = (String) args[0];
-                //msgArea.appendText(cause + "\n");
                 updateUI(() -> showErrorAlert(cause));
                 loginField.clear();
                 passwordField.clear();
@@ -79,44 +116,32 @@ public class Controller implements Initializable {// Интерфейс дает
                 String msg = (String) args[0];
                 setUsername(msg.split("\\s")[1]);
                 System.out.println("setOnAuthOkCallback уставливает username: " + msg.split("\\s")[1]);
-                //msgArea.clear();
             }
         });
 
-        network.setOnMessageReceivedCallback(new Callback() {
+        network.setOnUpdateServerFileList(new Callback() {
             @Override
             public void callback(Object... args) {
-                String msg = (String) args[0];
-                if (msg.startsWith("/")) {
-                    if (msg.startsWith("/clients_list ")) {
-                        // /clients_list Bob Max Jack
-                        String[] tokens = msg.split("\\s");
-                        Platform.runLater(() -> { //передаем задачу в поток JavaFX. Если пытаться это делать из текущего треда напрямую - будут ошибки
-                            // В поток JavaFX из других потоков не лезем. Предаем задачи через Platform
-                            clientsList.getItems().clear(); // getItems - запрос списка элементов, которые есть у view
-                            for (int i = 1; i < tokens.length; i++) {
-                                clientsList.getItems().add(tokens[i]);
-                            }
-                        });
-                    }
+                String fileList = (String) args[0];
+                String[] fileListTokens = fileList.split(" ");
+                if (fileListTokens.length % 4 != 0) {
+                    showErrorAlert("Получен некорректный список файлов от сервера!");
                     return;
                 }
-                //msgArea.appendText(msg + "\n");
-            }
-        });
-
-        network.setOnGetFileListCallback(new Callback() {
-            @Override
-            public void callback(Object... args) {
-                try {
-                    FileInfoPackage fileInfoPackage = (FileInfoPackage) network.getObjectInputStream().readObject();
-                    fileInfoList = fileInfoPackage.getFileInfoList();
-                    for (int i = 0; i < fileInfoList.size(); i++) {
-                        System.out.println("file #" + i + ": " + fileInfoList.get(i).getFilename());
-                    }
-                } catch (IOException| ClassNotFoundException e) {
-                    e.printStackTrace();
+                for (int i = 0; i < fileListTokens.length; i += 4) {
+                    String filename = fileListTokens[i];
+                    System.out.println("Controller: filename = " + filename);
+                    String type = fileListTokens[i + 1]; // false = FILE, true = DIRECTORY
+                    System.out.println("Controller: type = " + type);
+                    long size = Long.parseLong(fileListTokens[i + 2]);
+                    System.out.println("Controller: size = " + size);
+                    LocalDateTime lastModified = createLastModifyLocalDateTime(fileListTokens[i + 3]);
+                    System.out.println("Controller: lastModified = " + lastModified);
+                    FileInfo fileInfo = new FileInfo(filename, type, size, lastModified);
+                    fileInfoList.add(fileInfo);
                 }
+                System.out.println("Controller: fileInfoList is [" + fileInfoList + "]");
+                updateServerList(fileInfoList); // todo создать метод updateServerList()
             }
         });
 
@@ -129,19 +154,33 @@ public class Controller implements Initializable {// Интерфейс дает
         });
     }
 
-
-
-
-
-    public void refreshLocalFileList(){
-
+    /** МЕТОДЫ */
+    public void updateServerList(List<FileInfo> list) {
+        serverTable.getItems().clear(); // getItems - запрос списка элементов в таблице
+        for (int i = 0; i < list.size(); i++) {
+            System.out.println("fileList: " + list.get(i).getFilename() + " " + list.get(i).getType() + " " + list.get(i).getSize() + " " + list.get(i).getLastModified());
+        }
+        serverTable.getItems().addAll(list);
+        serverTable.sort();
     }
 
-    public void refreshServerFileList(){
-
+    public String getSelectedFilename() { // todo написать метод для серверной таблицы
+        if (!serverTable.isFocused()) {
+            return null;
+        }
+        return serverTable.getSelectionModel().getSelectedItem().getFilename();
     }
 
-
+    private LocalDateTime createLastModifyLocalDateTime(String lastModified) {
+        //2021-10-21T13:39:15.559917
+        //public static LocalDateTime of(int year, Month month, int dayOfMonth, int hour, int minute) {
+        int year = Integer.parseInt(lastModified.substring(0, 4));
+        int month = Integer.parseInt(lastModified.substring(5, 7));
+        int day = Integer.parseInt(lastModified.substring(8, 10));
+        int hour = Integer.parseInt(lastModified.substring(11, 13));
+        int minute = Integer.parseInt(lastModified.substring(14, 16));
+        return LocalDateTime.of(year, month, day, hour, minute);
+    }
 
     public void login() {
         if (loginField.getText().isEmpty()) {
@@ -167,24 +206,14 @@ public class Controller implements Initializable {// Интерфейс дает
         }
     }
 
-    public void sendMsg() {
-        try {
-            network.sendMessage(msgField.getText());
-            msgField.clear();
-            msgField.requestFocus(); // после предыдущего действия запрашиваем фокус в поле msgField
-        } catch (IOException e) {
-            showErrorAlert("Невозможно отправить сообщение");
-        }
-    }
-
-    public void exit(){
+    public void exit() {
         network.disconnect();
     }
 
-    private static void updateUI(Runnable r){
-        if (Platform.isFxApplicationThread()){
+    private static void updateUI(Runnable r) {
+        if (Platform.isFxApplicationThread()) {
             r.run();
-        }else {
+        } else {
             Platform.runLater(r);
         }
     }
@@ -204,10 +233,9 @@ public class Controller implements Initializable {// Интерфейс дает
 
     public void btnDownloadAction(ActionEvent actionEvent) {
         ClientPanelController clientPanelController = (ClientPanelController) clientPanel.getProperties().get("ctrl");
-        ServerPanelController serverPanelController = (ServerPanelController) serverPanel.getProperties().get("ctrl");
 
-        if(serverPanelController.getSelectedFilename() == null){
-            Alert alert = new Alert(Alert.AlertType.WARNING,"Не выбран файл для скачивания", ButtonType.OK);
+        if (clientPanelController.getSelectedFilename() == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Не выбран файл для скачивания", ButtonType.OK);
             alert.showAndWait();
             return;
         }
@@ -216,10 +244,9 @@ public class Controller implements Initializable {// Интерфейс дает
 
     public void btnUploadAction(ActionEvent actionEvent) {
         ClientPanelController clientPanelController = (ClientPanelController) clientPanel.getProperties().get("ctrl");
-        ServerPanelController serverPanelController = (ServerPanelController) serverPanel.getProperties().get("ctrl");
 
-        if(clientPanelController.getSelectedFilename() == null){
-            Alert alert = new Alert(Alert.AlertType.WARNING,"Не выбран файл для загрузки в удаленный репозиторий", ButtonType.OK);
+        if (clientPanelController.getSelectedFilename() == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Не выбран файл для загрузки в удаленный репозиторий", ButtonType.OK);
             alert.showAndWait();
             return;
         }

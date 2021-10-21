@@ -80,14 +80,15 @@ public class FileInfo {
         }
     }
 
-    public FileInfo(String filename, FileType type, long size, LocalDateTime lastModified) {
+    public FileInfo(String filename, String type, long size, LocalDateTime lastModified) {
         this.filename = filename;
-        this.type = type;
+        switch (type){
+            case "false": this.type = FileType.FILE;
+            break;
+            case "true": this.type = FileType.DIRECTORY;
+            break;
+        }
         this.size = size;
         this.lastModified = lastModified;
-    }
-
-    public FileInfo() {
-        new FileInfo("no files", FileType.FILE, 0L, LocalDateTime.now());
     }
 }
