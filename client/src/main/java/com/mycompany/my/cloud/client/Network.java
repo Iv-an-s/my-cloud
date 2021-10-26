@@ -3,9 +3,9 @@ package com.mycompany.my.cloud.client;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 
 public class Network {
@@ -85,6 +85,7 @@ public class Network {
                     }
                     while (true){
                         System.out.println("Перешли в цикл общения...");
+                        /** Здесь принимаем сообщения от сервера */
                         String msg = readMessage();
                         /**
                          * Запрашиваем список файлов
@@ -95,9 +96,9 @@ public class Network {
                          * который через switch обрабатывает команды от кнопок, отправляя запросы и получая результат
                          *
                           */
-                        if (onHandleCommandCallback != null){
-                            onHandleCommandCallback.callback();
-                        }
+//                        if (onHandleCommandCallback != null){
+//                            onHandleCommandCallback.callback();
+//                        }
 
 //                                if(onGetFileListCallback != null){
 //                                    onGetFileListCallback.callback();
@@ -202,5 +203,20 @@ public class Network {
         }catch (IOException e){
             e.printStackTrace();
         }
+    }
+
+    public void sendFile(Path srcPath, String username){
+        System.out.println("Filename is: " + srcPath.getFileName());
+        System.out.println("username is: " + username);
+    }
+
+
+    public void getFile(String srcFileName, Path dstPath) {
+        System.out.println("Filename for download is: " + srcFileName);
+        System.out.println("dstPath is: " + dstPath.toString());
+    }
+
+    public void deleteFile(String fileNameForDelete, String username) {
+        System.out.println("удаление файла: " + fileNameForDelete + " из папки " + username);
     }
 }

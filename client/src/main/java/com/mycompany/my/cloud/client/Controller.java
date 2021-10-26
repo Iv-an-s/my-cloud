@@ -13,6 +13,8 @@ import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -38,6 +40,8 @@ public class Controller implements Initializable {// Интерфейс дает
     private Network network;
     private String username;
     private List<FileInfo> fileInfoList;
+    private URL location;
+    private ResourceBundle resources;
 
     public void setUsername(String username) {
         this.username = username;
@@ -55,6 +59,8 @@ public class Controller implements Initializable {// Интерфейс дает
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         /** Инициализируем переменные */
+        this.location = location;
+        this.resources = resources;
         setUsername(null);
         network = new Network();
         fileInfoList = new ArrayList<>();
@@ -95,6 +101,7 @@ public class Controller implements Initializable {// Интерфейс дает
         serverFileDateColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastModified().format(dtf)));
         serverFileDateColumn.setPrefWidth(120);
 
+        serverTable.getColumns().clear();
         serverTable.getColumns().addAll(serverFileTypeColumn, serverFilenameColumn, serverFileSizeColumn, serverFileDateColumn);
         serverTable.getSortOrder().add(serverFileTypeColumn); // задали столбец, по которому будем по умолчанию сортироваться
 
@@ -152,6 +159,14 @@ public class Controller implements Initializable {// Интерфейс дает
                 setUsername(null);
             }
         });
+
+        network.setOnHandleCommandCallback(new Callback() {
+            @Override
+            public void callback(Object... args) {
+
+            }
+        });
+
     }
 
     /** МЕТОДЫ */
@@ -207,6 +222,7 @@ public class Controller implements Initializable {// Интерфейс дает
     }
 
     public void exit() {
+        Platform.exit();
         network.disconnect();
     }
 
@@ -227,19 +243,21 @@ public class Controller implements Initializable {// Интерфейс дает
     }
 
     public void btnExitAction(ActionEvent actionEvent) {
-        Platform.exit();
-        network.disconnect();
+        exit();
     }
 
     public void btnDownloadAction(ActionEvent actionEvent) {
         ClientPanelController clientPanelController = (ClientPanelController) clientPanel.getProperties().get("ctrl");
+        String fileNameForDownload;
 
-        if (clientPanelController.getSelectedFilename() == null) {
+        if ((fileNameForDownload = this.getSelectedFilename()) == null) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "Не выбран файл для скачивания", ButtonType.OK);
             alert.showAndWait();
             return;
         }
-        // todo логика метода
+        // Источник - this <-- server, назначение - clientPanelController
+        Path dstPath = Paths.get(clientPanelController.getCurrentPath(), fileNameForDownload);
+        network.getFile(fileNameForDownload, dstPath);
     }
 
     public void btnUploadAction(ActionEvent actionEvent) {
@@ -250,6 +268,27 @@ public class Controller implements Initializable {// Интерфейс дает
             alert.showAndWait();
             return;
         }
-        // todo логика метода
+        // Источник - clientPanelController, назначение - this --> server
+        Path srcPath = Paths.get(clientPanelController.getCurrentPath(), clientPanelController.getSelectedFilename());
+        network.sendFile(srcPath, username);
+    }
+
+    public void btnDeleteAction(ActionEvent actionEvent) {
+        String fileNameForDelete;
+
+        if ((fileNameForDelete = this.getSelectedFilename()) == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Не выбран файл для удаления", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+
+        // todo написать Предупрежедение об удалении с подтверждением или отменой действия
+        network.deleteFile(fileNameForDelete, username);
+    }
+
+    public void btnLogOutAction(ActionEvent actionEvent) {
+        this.username = null;
+
+        initialize(location, resources);
     }
 }

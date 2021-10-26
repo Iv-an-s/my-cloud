@@ -29,8 +29,8 @@
     <HBox fx:id="buttonPanel" spacing="5">
         <Button maxWidth="Infinity" focusTraversable="false" text="Download" HBox.hgrow="ALWAYS" onAction="#btnDownloadAction"/>
         <Button maxWidth="Infinity" focusTraversable="false" text="Upload" HBox.hgrow="ALWAYS" onAction="#btnUploadAction"/>
-        <Button maxWidth="Infinity" focusTraversable="false" text="Delete" HBox.hgrow="ALWAYS" />
-        <Button maxWidth="Infinity" focusTraversable="false" text="Log Out" HBox.hgrow="ALWAYS" />
+        <Button maxWidth="Infinity" focusTraversable="false" text="Delete" HBox.hgrow="ALWAYS" onAction="#btnDeleteAction"/>
+        <Button maxWidth="Infinity" focusTraversable="false" text="Log Out" HBox.hgrow="ALWAYS" onAction="#btnLogOutAction"/>
       <padding>
          <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
       </padding>
