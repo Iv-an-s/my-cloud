@@ -1,10 +1,9 @@
 package com.mycompany.my.cloud.client;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 
@@ -205,9 +204,34 @@ public class Network {
         }
     }
 
-    public void sendFile(Path srcPath, String username){
+    public void sendFile(Path srcPath, String username) throws IOException {
         System.out.println("Filename is: " + srcPath.getFileName());
         System.out.println("username is: " + username);
+        InputStream in;
+        out.write(15);
+        System.out.println("Отправлен сигнальный байт 15");
+//        File file = new File("client_repository/1.txt");
+//        String filename = file.getName();
+        String filename = srcPath.getFileName().toString();
+        byte[] filenameBytes = filename.getBytes();
+        out.writeInt(filenameBytes.length);
+        System.out.println("Отправлена длина имени файла: " + filenameBytes.length);
+        out.write(filenameBytes);
+        System.out.println("Отправлено имя файла");
+        long fileLength = Files.size(srcPath);
+        out.writeLong(fileLength);
+        System.out.println("Отправлена длина файла: " + fileLength + " bytes");
+
+        in = new BufferedInputStream(new FileInputStream(filename));
+        int b;
+        long count = 0;
+        System.out.println("Готовимся отправить файл");
+        while ((b = in.read()) != -1) {
+            out.write(b);
+            count++;
+        }
+        System.out.println("Файл " + filename + " отправлен! [отправлено " + count + " bytes]");
+        in.close();
     }
 
 

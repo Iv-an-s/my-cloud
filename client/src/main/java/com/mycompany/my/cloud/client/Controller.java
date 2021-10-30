@@ -270,7 +270,11 @@ public class Controller implements Initializable {// Интерфейс дает
         }
         // Источник - clientPanelController, назначение - this --> server
         Path srcPath = Paths.get(clientPanelController.getCurrentPath(), clientPanelController.getSelectedFilename());
-        network.sendFile(srcPath, username);
+        try {
+            network.sendFile(srcPath, username);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void btnDeleteAction(ActionEvent actionEvent) {
